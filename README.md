@@ -35,3 +35,5 @@ Adapts your .NET Stream to the native media pipeline:
 I have not tested de iOS/MacCatalyst version, but it *may*™ work. Also, I have not permormed any form of thorough testing. I created this just to see if it was possible to do, and it was - at least *on my machine*™.
 
 Just copy and paste the code into your project. :D
+
+Portions adapted from CommunityToolkit.Maui.MediaElement (MIT).

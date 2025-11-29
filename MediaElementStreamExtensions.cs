@@ -5,7 +5,6 @@ using CommunityToolkit.Maui.Views;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-
 #if WINDOWS
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -72,6 +71,13 @@ namespace StreamMediaElement
                 if (nativePlayer is null)
                     throw new NullReferenceException(nameof(nativePlayer));
 
+#if false
+                if (GetConnection(mediaManager) is null)
+                {
+                    StartService(mediaManager);
+                }
+#endif
+
                 var iMediaElement = GetMediaElement(mediaManager);
                 CurrentStateChanged(iMediaElement, MediaElementState.Opening);
                 nativePlayer.PlayWhenReady = iMediaElement.ShouldAutoPlay;
@@ -102,6 +108,15 @@ namespace StreamMediaElement
 
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "UpdateNotifications")]
                 extern static void UpdateNotifications(MediaManager mauiMediaElement);
+
+#if false
+                [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "connection")]
+                [return: UnsafeAccessorType("CommunityToolkit.Maui.Services.BoundServiceConnection, CommunityToolkit.Maui.MediaElement")]
+                extern static ref object GetConnection(MediaManager mauiMediaElement);
+
+                [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "StartService")]
+                extern static void StartService(MediaManager mauiMediaElement);
+#endif
             }
 #elif IOS || MACCATALYST
             if (mediaElement.Handler is MediaElementHandler mediaElementHandler)
@@ -140,7 +155,7 @@ namespace StreamMediaElement
                 extern static (int Width, int Height) GetVideoDimensions(MediaManager mediaManager, AVPlayerItem avPlayerItem);
             }
 #else
-            return false;
+                return false;
 #endif
 
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_MediaManager")]

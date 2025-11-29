@@ -34,7 +34,13 @@ namespace StreamMediaElement
         /// <returns></returns>
         /// <exception cref="Exception">The Stream is not seekable</exception>
         /// <exception cref="NullReferenceException">A required element is null.</exception>
-        public static async ValueTask SetStreamMediaSource(this MediaElement? mediaElement, Stream? stream, string contentType = "video/mp4", bool throwIfNotSeekable = false)
+        public static async ValueTask SetStreamMediaSource(this MediaElement? mediaElement, Stream? stream,
+#if IOS || MACCATALYST
+            string contentType = "public.mpeg-4",
+#else
+            string contentType = "video/mp4",
+#endif
+            bool throwIfNotSeekable = false)
         {
             if (mediaElement is null || stream is null)
                 throw new NullReferenceException();

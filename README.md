@@ -29,7 +29,7 @@ Adapts your .NET Stream to the native media pipeline:
 
 
 > [!IMPORTANT]
-> Requires seekable streams (stream.CanSeek == true). (The throwIfNotSeekable parameter is present for future flexibility; currently a non-seekable stream throws.)
+> Non-seekable streams are copied into a seekable stream (MemoryStream or temp FileStream) before being adapted. You can disable this behavior by setting `throwIfNotSeekable` to true.
 
 ## Note
 I have not tested de iOS/MacCatalyst version, but it *may*™ work. Also, I have not permormed any form of thorough testing. I created this just to see if it was possible to do, and it was - at least *on my machine*™.

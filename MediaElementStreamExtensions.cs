@@ -31,6 +31,8 @@ namespace StreamMediaElement
         /// <param name="stream">A seekable data stream that will be set as the source of the MediaElement.</param>
         /// <param name="contentType">The MIME type of the content of the stream.</param>
         /// <param name="throwIfNotSeekable">If true, an exception will be thrown if the stream is not seekable.</param>
+        /// <param name="maxMemoryStreamBufferSize">The maximum size in bytes of the buffer to use when copying a non-seekable stream to a temporary seekable stream. Default is 1 MB.</param>
+        /// <param name="cancellationToken">A CancellationToken to cancel the operation.</param>
         /// <returns></returns>
         /// <exception cref="Exception">The Stream is not seekable</exception>
         /// <exception cref="NullReferenceException">A required element is null.</exception>
@@ -40,13 +42,46 @@ namespace StreamMediaElement
 #else
             string contentType = "video/mp4",
 #endif
-            bool throwIfNotSeekable = false)
+            bool throwIfNotSeekable = false, int maxMemoryStreamBufferSize = 1_048_576, CancellationToken cancellationToken = default)
         {
             if (mediaElement is null || stream is null)
                 throw new NullReferenceException();
 
             if (!stream.CanSeek)
-                throw new Exception("Stream is not seekable");
+            {
+                if (throwIfNotSeekable)
+                    throw new Exception("The provided stream is not seekable.");
+
+                byte[] buffer = GC.AllocateUninitializedArray<byte>(maxMemoryStreamBufferSize);
+
+                int result = await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken: cancellationToken);
+
+                if (result < buffer.Length)
+                {
+                    // The stream is small enough to fit in memory
+                    var memoryStream = new MemoryStream(buffer, 0, result, writable: false, publiclyVisible: true);
+                    stream = memoryStream;
+                }
+                else
+                {
+                    var tempPath = Path.GetTempFileName();
+
+                    var fileOptions = new FileStreamOptions
+                    {
+                        Access = FileAccess.ReadWrite,
+                        Mode = FileMode.Create,
+                        Share = FileShare.None,
+                        Options = FileOptions.DeleteOnClose | FileOptions.Asynchronous
+                    };
+                    var tmpStream = new FileStream(tempPath, fileOptions);
+                    await tmpStream.WriteAsync(buffer, cancellationToken);
+                    await stream.CopyToAsync(tmpStream, cancellationToken);
+                    stream = tmpStream;
+                }
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
 
 #if WINDOWS
             if (mediaElement.Handler is MediaElementHandler mediaElementHandler)
@@ -161,7 +196,7 @@ namespace StreamMediaElement
                 extern static (int Width, int Height) GetVideoDimensions(MediaManager mediaManager, AVPlayerItem avPlayerItem);
             }
 #else
-                return false;
+                throw new PlatformNotSupportedException();
 #endif
 
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_MediaManager")]
